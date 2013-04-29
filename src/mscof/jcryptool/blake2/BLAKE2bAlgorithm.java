@@ -1,6 +1,8 @@
 package mscof.jcryptool.blake2;
 
+import java.lang.reflect.Array;
 import java.math.BigInteger;
+import java.util.Arrays;
 
 /*
  * Authored by Jonathan Claudio and Craig Strange, 2013.
@@ -15,14 +17,7 @@ import java.math.BigInteger;
 
 public class BLAKE2bAlgorithm {
 	
-	// Java has an issue with the reference implementation as Java does not support
-	// unsigned variables.  Alternatives will be used where possible. - Jonathan
-	
 	// Obviously broken atm, copy-pasta from C# reference implementation.
-	
-	// Idea: Use byte arrays instead of BigInteger. could potentially work...
-	
-	
 
 	private Boolean _isInitialized = false;
 
@@ -31,15 +26,17 @@ public class BLAKE2bAlgorithm {
 
 	private BigInteger[] _m = new BigInteger[16];
 	private BigInteger[] _h = new BigInteger[8];
-	private BigInteger _counter0;
-	private BigInteger _counter1;
+	private int _counter0;
+	private int _counter1;
 	private BigInteger _finalizationFlag0;
 	private BigInteger _finalizationFlag1;
 
+	private final BigInteger ulongMaxValue = new BigInteger("FFFFFFFFFFFFFFFF",16);
+	
+	
 	private final int NumberOfRounds = 12;
 	private final int BlockSizeInBytes = 128;
 
-	// TODO Change to BigInteger
 	final BigInteger IV0 = new BigInteger("6A09E667F3BCC908",16);
 	final BigInteger IV1 = new BigInteger("BB67AE8584CAA73B",16);
 	final BigInteger IV2 = new BigInteger("3C6EF372FE94F82B",16);
@@ -49,8 +46,7 @@ public class BLAKE2bAlgorithm {
 	final BigInteger IV6 = new BigInteger("1F83D9ABFB41BD6B",16);
 	final BigInteger IV7 = new BigInteger("5BE0CD19137E2179",16);
 
-	//TODO Java equivalent of C# arrays
-	private static readonly int[] Sigma = new int[NumberOfRounds * 16] {
+	private static int[] Sigma = {
 		0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
 		14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3,
 		11, 8, 12, 0, 5, 2, 15, 13, 10, 14, 3, 6, 7, 1, 9, 4,
@@ -65,18 +61,19 @@ public class BLAKE2bAlgorithm {
 		14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3
 	};
 
+	/*
 	//TODO Figure out how to cast as BigInteger
 	internal static BigInteger BytesToUInt64(byte[] buf, int offset)
 	{
-		return
-			((BigInteger)buf[offset + 7] << 7 * 8 |
-			((BigInteger)buf[offset + 6] << 6 * 8) |
-			((BigInteger)buf[offset + 5] << 5 * 8) |
-			((BigInteger)buf[offset + 4] << 4 * 8) |
-			((BigInteger)buf[offset + 3] << 3 * 8) |
-			((BigInteger)buf[offset + 2] << 2 * 8) |
-			((BigInteger)buf[offset + 1] << 1 * 8) |
-			((BigInteger)buf[offset]));
+		return new BigInteger(
+			(buf[offset + 7] << 7 * 8 |
+			(buf[offset + 6] << 6 * 8) |
+			(buf[offset + 5] << 5 * 8) |
+			(buf[offset + 4] << 4 * 8) |
+			(buf[offset + 3] << 3 * 8) |
+			(buf[offset + 2] << 2 * 8) |
+			(buf[offset + 1] << 1 * 8) |
+			(buf[offset]));
 	}
 
 	private static void UInt64ToBytes(BigInteger value, byte[] buf, int offset)
@@ -91,15 +88,17 @@ public class BLAKE2bAlgorithm {
 		buf[offset] = (byte)value;
 	}
 
+	*/
 	//TODO Find implementation in C# code, add here
+	
 	partial void Compress(byte[] block, int start);
 
 	public void Initialize(BigInteger[] config)
 	{
 		if (config == null)
-			throw new ArgumentNullException("config");
-		if (config.Length != 8)
-			throw new ArgumentException("config length must be 8 words");
+			throw new Exception("config");
+		if (config.length != 8)
+			throw new Exception("config length must be 8 words");
 		_isInitialized = true;
 
 		_h[0] = IV0;
@@ -118,7 +117,9 @@ public class BLAKE2bAlgorithm {
 
 		_bufferFilled = 0;
 
-		Array.Clear(_buf, 0, _buf.Length);
+		
+		Arrays.fill(_buf, (Byte) null);
+		//Array.Clear(_buf, 0, _buf.length);
 
 		for (int i = 0; i < 8; i++)
 			_h[i] ^= config[i];
@@ -127,21 +128,22 @@ public class BLAKE2bAlgorithm {
 	public void HashCore(byte[] array, int start, int count)
 	{
 		if (!_isInitialized)
-			throw new InvalidOperationException("Not initialized");
+			throw new Exception("Not initialized");
 		if (array == null)
-			throw new ArgumentNullException("array");
+			throw new Exception("array");
 		if (start < 0)
-			throw new ArgumentOutOfRangeException("start");
+			throw new Exception("start");
 		if (count < 0)
-			throw new ArgumentOutOfRangeException("count");
-		if ((long)start + (long)count > array.Length)
-			throw new ArgumentOutOfRangeException("start+count");
+			throw new Exception("count");
+		if ((long)start + (long)count > array.length)
+			throw new Exception("start+count");
 		int offset = start;
 		int bufferRemaining = BlockSizeInBytes - _bufferFilled;
 
 		if ((_bufferFilled > 0) && (count > bufferRemaining))
 		{
-			Array.Copy(array, offset, _buf, _bufferFilled, bufferRemaining);
+			
+			System.arraycopy(array, offset, _buf, _bufferFilled, bufferRemaining);
 			_counter0 += BlockSizeInBytes;
 			if (_counter0 == 0)
 				_counter1++;
@@ -163,7 +165,7 @@ public class BLAKE2bAlgorithm {
 
 		if (count > 0)
 		{
-			Array.Copy(array, offset, _buf, _bufferFilled, count);
+			System.arraycopy(array, offset, _buf, _bufferFilled, count);
 			_bufferFilled += count;
 		}
 	}
@@ -176,15 +178,15 @@ public class BLAKE2bAlgorithm {
 	public byte[] HashFinal(Boolean isEndOfLayer)
 	{
 		if (!_isInitialized)
-			throw new InvalidOperationException("Not initialized");
+			throw new Exception("Not initialized");
 		_isInitialized = false;
 
 		//Last compression
-		_counter0 += (uint)_bufferFilled;
-		_finalizationFlag0 = BigInteger.MaxValue;
+		_counter0 += _bufferFilled;
+		_finalizationFlag0 = ulongMaxValue;
 		if (isEndOfLayer)
-			_finalizationFlag1 = BigInteger.MaxValue;
-		for (int i = _bufferFilled; i < _buf.Length; i++)
+			_finalizationFlag1 = ulongMaxValue;
+		for (int i = _bufferFilled; i < _buf.length; i++)
 			_buf[i] = 0;
 		Compress(_buf, 0);
 
