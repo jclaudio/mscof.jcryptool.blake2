@@ -15,10 +15,11 @@ import java.util.Arrays;
  * BLAKE2 was designed by 
  */
 
-public class BLAKE2bAlgorithm {
-	
-	// Obviously broken atm, copy-pasta from C# reference implementation.
+public class BLAKE2bAlgorithm extends java.security.MessageDigest{
 
+	protected BLAKE2bAlgorithm(String algorithm) {
+		super("BLAKE2b");
+	}
 	private Boolean _isInitialized = false;
 
 	private int _bufferFilled;
@@ -60,36 +61,28 @@ public class BLAKE2bAlgorithm {
 		0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
 		14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3
 	};
-
-	/*
-	//TODO Figure out how to cast as BigInteger
-	internal static BigInteger BytesToUInt64(byte[] buf, int offset)
-	{
-		return new BigInteger(
-			(buf[offset + 7] << 7 * 8 |
-			(buf[offset + 6] << 6 * 8) |
-			(buf[offset + 5] << 5 * 8) |
-			(buf[offset + 4] << 4 * 8) |
-			(buf[offset + 3] << 3 * 8) |
-			(buf[offset + 2] << 2 * 8) |
-			(buf[offset + 1] << 1 * 8) |
-			(buf[offset]));
-	}
-
-	private static void UInt64ToBytes(BigInteger value, byte[] buf, int offset)
-	{
-		buf[offset + 7] = (byte)(value >> 7 * 8);
-		buf[offset + 6] = (byte)(value >> 6 * 8);
-		buf[offset + 5] = (byte)(value >> 5 * 8);
-		buf[offset + 4] = (byte)(value >> 4 * 8);
-		buf[offset + 3] = (byte)(value >> 3 * 8);
-		buf[offset + 2] = (byte)(value >> 2 * 8);
-		buf[offset + 1] = (byte)(value >> 1 * 8);
-		buf[offset] = (byte)value;
-	}
-
-	*/
-	//TODO Find implementation in C# code, add here
+	
+    static long getLong(byte[] b, int off) {
+        return  ((b[off + 7] & 0xFFL)      ) +
+                ((b[off + 6] & 0xFFL) <<  8) +
+                ((b[off + 5] & 0xFFL) << 16) +
+                ((b[off + 4] & 0xFFL) << 24) +
+                ((b[off + 3] & 0xFFL) << 32) +
+                ((b[off + 2] & 0xFFL) << 40) +
+                ((b[off + 1] & 0xFFL) << 48) +
+                (((long) b[off])      << 56);
+    }
+    //long to byte conversion
+    static void putLong(byte[] b, int off, long val) {
+        b[off + 7] = (byte) (val       );
+        b[off + 6] = (byte) (val >>>  8);
+        b[off + 5] = (byte) (val >>> 16);
+        b[off + 4] = (byte) (val >>> 24);
+        b[off + 3] = (byte) (val >>> 32);
+        b[off + 2] = (byte) (val >>> 40);
+        b[off + 1] = (byte) (val >>> 48);
+        b[off    ] = (byte) (val >>> 56);
+    }
 	
 	partial void Compress(byte[] block, int start);
 
@@ -119,7 +112,6 @@ public class BLAKE2bAlgorithm {
 
 		
 		Arrays.fill(_buf, (Byte) null);
-		//Array.Clear(_buf, 0, _buf.length);
 
 		for (int i = 0; i < 8; i++)
 			_h[i] ^= config[i];
@@ -195,6 +187,26 @@ public class BLAKE2bAlgorithm {
 		for (int i = 0; i < 8; ++i)
 			UInt64ToBytes(_h[i], hash, i << 3);
 		return hash;
+	}
+	@Override
+	protected void engineUpdate(byte input) {
+		// TODO Auto-generated method stub
+		
+	}
+	@Override
+	protected void engineUpdate(byte[] input, int offset, int len) {
+		// TODO Auto-generated method stub
+		
+	}
+	@Override
+	protected byte[] engineDigest() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	@Override
+	protected void engineReset() {
+		// TODO Auto-generated method stub
+		
 	}
 	
 	
