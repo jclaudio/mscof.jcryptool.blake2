@@ -1,7 +1,7 @@
 package mscof.jcryptool.blake2;
 
 import java.lang.reflect.Array;
-import java.math.BigInteger;
+import java.math.*;
 import java.util.Arrays;
 
 /*
@@ -15,37 +15,34 @@ import java.util.Arrays;
  * BLAKE2 was designed by 
  */
 
-public class BLAKE2bAlgorithm extends java.security.MessageDigest{
+public class BLAKE2bAlgorithm{
 
-	protected BLAKE2bAlgorithm(String algorithm) {
-		super("BLAKE2b");
-	}
 	private Boolean _isInitialized = false;
 
 	private int _bufferFilled;
 	private byte[] _buf = new byte[128];
 
-	private BigInteger[] _m = new BigInteger[16];
-	private BigInteger[] _h = new BigInteger[8];
+	private long[] _m = new long[16];
+	private long[] _h = new long[8];
 	private int _counter0;
 	private int _counter1;
-	private BigInteger _finalizationFlag0;
-	private BigInteger _finalizationFlag1;
+	private long _finalizationFlag0;
+	private long _finalizationFlag1;
 
-	private final BigInteger ulongMaxValue = new BigInteger("FFFFFFFFFFFFFFFF",16);
+	private final long ulongMaxValue = 0xFFFFFFFFFFFFFFFFL;
 	
 	
 	private final int NumberOfRounds = 12;
 	private final int BlockSizeInBytes = 128;
 
-	final BigInteger IV0 = new BigInteger("6A09E667F3BCC908",16);
-	final BigInteger IV1 = new BigInteger("BB67AE8584CAA73B",16);
-	final BigInteger IV2 = new BigInteger("3C6EF372FE94F82B",16);
-	final BigInteger IV3 = new BigInteger("A54FF53A5F1D36F1",16);
-	final BigInteger IV4 = new BigInteger("510E527FADE682D1",16);
-	final BigInteger IV5 = new BigInteger("9B05688C2B3E6C1F",16);
-	final BigInteger IV6 = new BigInteger("1F83D9ABFB41BD6B",16);
-	final BigInteger IV7 = new BigInteger("5BE0CD19137E2179",16);
+	final long IV0 = 0x6A09E667F3BCC908L;
+	final long IV1 = 0xBB67AE8584CAA73BL;
+	final long IV2 = 0x3C6EF372FE94F82BL;
+	final long IV3 = 0xA54FF53A5F1D36F1L;
+	final long IV4 = 0x510E527FADE682D1L;
+	final long IV5 = 0x9B05688C2B3E6C1FL;
+	final long IV6 = 0x1F83D9ABFB41BD6BL;
+	final long IV7 = 0x5BE0CD19137E2179L;
 
 	private static int[] Sigma = {
 		0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
@@ -72,7 +69,7 @@ public class BLAKE2bAlgorithm extends java.security.MessageDigest{
                 ((b[off + 1] & 0xFFL) << 48) +
                 (((long) b[off])      << 56);
     }
-    //long to byte conversion
+ 
     static void putLong(byte[] b, int off, long val) {
         b[off + 7] = (byte) (val       );
         b[off + 6] = (byte) (val >>>  8);
@@ -84,14 +81,156 @@ public class BLAKE2bAlgorithm extends java.security.MessageDigest{
         b[off    ] = (byte) (val >>> 56);
     }
 	
-	partial void Compress(byte[] block, int start);
-
-	public void Initialize(BigInteger[] config)
+    private void Compress(byte[] block, int start)
 	{
-		if (config == null)
-			throw new Exception("config");
-		if (config.length != 8)
-			throw new Exception("config length must be 8 words");
+		long[] h = _h;
+		long[] m = _m;
+
+		long v0 = h[0];
+		long v1 = h[1];
+		long v2 = h[2];
+		long v3 = h[3];
+		long v4 = h[4];
+		long v5 = h[5];
+		long v6 = h[6];
+		long v7 = h[7];
+
+		long v8 = IV0;
+		long v9 = IV1;
+		long v10 = IV2;
+		long v11 = IV3;
+		long v12 = IV4 ^ _counter0;
+		long v13 = IV5 ^ _counter1;
+		long v14 = IV6 ^ _finalizationFlag0;
+		long v15 = IV7 ^ _finalizationFlag1;
+
+		for (int r = 0; r < NumberOfRounds; ++r)
+		{
+			// G(r,0,v0,v4,v8,v12) 
+			v0 = v0 + v4 + m[Sigma[16 * r + 2 * 0 + 0]];
+			v12 ^= v0;
+			v12 = ((v12 >> 32) | (v12 << (64 - 32)));
+			v8 = v8 + v12;
+			v4 ^= v8;
+			v4 = ((v4 >> 24) | (v4 << (64 - 24)));
+			v0 = v0 + v4 + m[Sigma[16 * r + 2 * 0 + 1]];
+			v12 ^= v0;
+			v12 = ((v12 >> 16) | (v12 << (64 - 16)));
+			v8 = v8 + v12;
+			v4 ^= v8;
+			v4 = ((v4 >> 63) | (v4 << (64 - 63)));
+
+			// G(r,1,v1,v5,v9,v13) 
+			v1 = v1 + v5 + m[Sigma[16 * r + 2 * 1 + 0]];
+			v13 ^= v1;
+			v13 = ((v13 >> 32) | (v13 << (64 - 32)));
+			v9 = v9 + v13;
+			v5 ^= v9;
+			v5 = ((v5 >> 24) | (v5 << (64 - 24)));
+			v1 = v1 + v5 + m[Sigma[16 * r + 2 * 1 + 1]];
+			v13 ^= v1;
+			v13 = ((v13 >> 16) | (v13 << (64 - 16)));
+			v9 = v9 + v13;
+			v5 ^= v9;
+			v5 = ((v5 >> 63) | (v5 << (64 - 63)));
+
+			// G(r,2,v2,v6,v10,v14) 
+			v2 = v2 + v6 + m[Sigma[16 * r + 2 * 2 + 0]];
+			v14 ^= v2;
+			v14 = ((v14 >> 32) | (v14 << (64 - 32)));
+			v10 = v10 + v14;
+			v6 ^= v10;
+			v6 = ((v6 >> 24) | (v6 << (64 - 24)));
+			v2 = v2 + v6 + m[Sigma[16 * r + 2 * 2 + 1]];
+			v14 ^= v2;
+			v14 = ((v14 >> 16) | (v14 << (64 - 16)));
+			v10 = v10 + v14;
+			v6 ^= v10;
+			v6 = ((v6 >> 63) | (v6 << (64 - 63)));
+
+			// G(r,3,v3,v7,v11,v15) 
+			v3 = v3 + v7 + m[Sigma[16 * r + 2 * 3 + 0]];
+			v15 ^= v3;
+			v15 = ((v15 >> 32) | (v15 << (64 - 32)));
+			v11 = v11 + v15;
+			v7 ^= v11;
+			v7 = ((v7 >> 24) | (v7 << (64 - 24)));
+			v3 = v3 + v7 + m[Sigma[16 * r + 2 * 3 + 1]];
+			v15 ^= v3;
+			v15 = ((v15 >> 16) | (v15 << (64 - 16)));
+			v11 = v11 + v15;
+			v7 ^= v11;
+			v7 = ((v7 >> 63) | (v7 << (64 - 63)));
+
+			// G(r,4,v0,v5,v10,v15) 
+			v0 = v0 + v5 + m[Sigma[16 * r + 2 * 4 + 0]];
+			v15 ^= v0;
+			v15 = ((v15 >> 32) | (v15 << (64 - 32)));
+			v10 = v10 + v15;
+			v5 ^= v10;
+			v5 = ((v5 >> 24) | (v5 << (64 - 24)));
+			v0 = v0 + v5 + m[Sigma[16 * r + 2 * 4 + 1]];
+			v15 ^= v0;
+			v15 = ((v15 >> 16) | (v15 << (64 - 16)));
+			v10 = v10 + v15;
+			v5 ^= v10;
+			v5 = ((v5 >> 63) | (v5 << (64 - 63)));
+
+			// G(r,5,v1,v6,v11,v12) 
+			v1 = v1 + v6 + m[Sigma[16 * r + 2 * 5 + 0]];
+			v12 ^= v1;
+			v12 = ((v12 >> 32) | (v12 << (64 - 32)));
+			v11 = v11 + v12;
+			v6 ^= v11;
+			v6 = ((v6 >> 24) | (v6 << (64 - 24)));
+			v1 = v1 + v6 + m[Sigma[16 * r + 2 * 5 + 1]];
+			v12 ^= v1;
+			v12 = ((v12 >> 16) | (v12 << (64 - 16)));
+			v11 = v11 + v12;
+			v6 ^= v11;
+			v6 = ((v6 >> 63) | (v6 << (64 - 63)));
+
+			// G(r,6,v2,v7,v8,v13) 
+			v2 = v2 + v7 + m[Sigma[16 * r + 2 * 6 + 0]];
+			v13 ^= v2;
+			v13 = ((v13 >> 32) | (v13 << (64 - 32)));
+			v8 = v8 + v13;
+			v7 ^= v8;
+			v7 = ((v7 >> 24) | (v7 << (64 - 24)));
+			v2 = v2 + v7 + m[Sigma[16 * r + 2 * 6 + 1]];
+			v13 ^= v2;
+			v13 = ((v13 >> 16) | (v13 << (64 - 16)));
+			v8 = v8 + v13;
+			v7 ^= v8;
+			v7 = ((v7 >> 63) | (v7 << (64 - 63)));
+
+			// G(r,7,v3,v4,v9,v14) 
+			v3 = v3 + v4 + m[Sigma[16 * r + 2 * 7 + 0]];
+			v14 ^= v3;
+			v14 = ((v14 >> 32) | (v14 << (64 - 32)));
+			v9 = v9 + v14;
+			v4 ^= v9;
+			v4 = ((v4 >> 24) | (v4 << (64 - 24)));
+			v3 = v3 + v4 + m[Sigma[16 * r + 2 * 7 + 1]];
+			v14 ^= v3;
+			v14 = ((v14 >> 16) | (v14 << (64 - 16)));
+			v9 = v9 + v14;
+			v4 ^= v9;
+			v4 = ((v4 >> 63) | (v4 << (64 - 63)));
+		}
+
+		h[0] ^= v0 ^ v8;
+		h[1] ^= v1 ^ v9;
+		h[2] ^= v2 ^ v10;
+		h[3] ^= v3 ^ v11;
+		h[4] ^= v4 ^ v12;
+		h[5] ^= v5 ^ v13;
+		h[6] ^= v6 ^ v14;
+		h[7] ^= v7 ^ v15;
+	}
+
+	public void Initialize()
+	{
 		_isInitialized = true;
 
 		_h[0] = IV0;
@@ -113,11 +252,9 @@ public class BLAKE2bAlgorithm extends java.security.MessageDigest{
 		
 		Arrays.fill(_buf, (Byte) null);
 
-		for (int i = 0; i < 8; i++)
-			_h[i] ^= config[i];
 	}
 
-	public void HashCore(byte[] array, int start, int count)
+	public void HashCore(byte[] array, int start, int count) throws Exception
 	{
 		if (!_isInitialized)
 			throw new Exception("Not initialized");
@@ -162,12 +299,12 @@ public class BLAKE2bAlgorithm extends java.security.MessageDigest{
 		}
 	}
 
-	public byte[] HashFinal()
+	public byte[] HashFinal() throws Exception
 	{
 		return HashFinal(false);
 	}
 
-	public byte[] HashFinal(Boolean isEndOfLayer)
+	public byte[] HashFinal(Boolean isEndOfLayer) throws Exception
 	{
 		if (!_isInitialized)
 			throw new Exception("Not initialized");
@@ -185,30 +322,9 @@ public class BLAKE2bAlgorithm extends java.security.MessageDigest{
 		//Output
 		byte[] hash = new byte[64];
 		for (int i = 0; i < 8; ++i)
-			UInt64ToBytes(_h[i], hash, i << 3);
+			putLong(hash, i << 3, _h[i]);
+
 		return hash;
 	}
-	@Override
-	protected void engineUpdate(byte input) {
-		// TODO Auto-generated method stub
-		
-	}
-	@Override
-	protected void engineUpdate(byte[] input, int offset, int len) {
-		// TODO Auto-generated method stub
-		
-	}
-	@Override
-	protected byte[] engineDigest() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	@Override
-	protected void engineReset() {
-		// TODO Auto-generated method stub
-		
-	}
-	
-	
-	
+
 }
