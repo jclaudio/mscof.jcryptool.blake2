@@ -1,7 +1,7 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Blake2
-Bundle-SymbolicName: mscof.jcryptool.blake2
+Bundle-SymbolicName: mscof.jcryptool.blake2;singleton:=true
 Bundle-Version: 1.0.0.qualifier
 Bundle-Activator: mscof.jcryptool.blake2.BLAKE2Plugin
 Require-Bundle: org.eclipse.ui,
